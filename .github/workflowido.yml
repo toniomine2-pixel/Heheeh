@@ -1,0 +1,48 @@
+name: Windows Virtual - AnyDesk
+
+on:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-2025
+    timeout-minutes: 360
+
+    steps:
+      - name: Baixar AnyDesk
+        shell: powershell
+        run: |
+          Invoke-WebRequest `
+            -Uri "https://download.anydesk.com/AnyDesk.exe" `
+            -OutFile "$env:TEMP\AnyDesk.exe"
+
+      - name: Instalar AnyDesk
+        shell: powershell
+        run: |
+          Start-Process `
+            -FilePath "$env:TEMP\AnyDesk.exe" `
+            -ArgumentList '--install "C:\Program Files (x86)\AnyDesk" --start-with-win --silent' `
+            -Wait
+
+      - name: Configurar acesso não supervisionado
+        shell: powershell
+        env:
+          ANYDESK_PASSWORD: ${{ secrets.ANYDESK_PASSWORD }}
+        run: |
+          $exe = "C:\Program Files (x86)\AnyDesk\AnyDesk.exe"
+
+          $env:ANYDESK_PASSWORD |
+            & $exe --set-password _unattended_access
+
+          Start-Service AnyDesk -ErrorAction SilentlyContinue
+
+      - name: Mostrar ID do AnyDesk
+        shell: powershell
+        run: |
+          $exe = "C:\Program Files (x86)\AnyDesk\AnyDesk.exe"
+          & $exe --get-id
+
+      - name: Manter a máquina disponível
+        shell: powershell
+        run: |
+          Start-Sleep -Seconds 21000
